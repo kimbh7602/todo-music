@@ -27,7 +27,14 @@
       "Skill(office-hours)",
       "Skill(office-hours:*)",
       "Skill(qa)",
-      "Skill(qa:*)"
+      "Skill(qa:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://github.com/kimbh7602/todo-music)",
+      "Bash(B=~/.claude/skills/gstack/browse/dist/browse)",
+      "Bash($B goto:*)",
+      "Bash($B screenshot:*)",
+      "Bash($B console:*)",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)"
     ],
     "defaultMode": "bypassPermissions",
     "additionalDirectories": [

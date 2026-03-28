@@ -1,87 +1,113 @@
 # Todo Music Project
 
-## 개발 워크플로우 (gstack skills 파이프라인)
+## 작업 원칙
 
-이 프로젝트는 gstack skills을 유기적으로 활용하여 기획부터 배포까지 진행합니다.
+- **동의없이 진행**: 작업 중 매번 허락을 구하지 말 것. 단계 시작/끝에서만 상태 보고.
+- **TDD**: 모든 구현은 테스트 먼저 작성 후 구현. 테스트 없는 코드는 미완성.
+- **작업 완료 시 결과 보고 필수**: 무엇을 했고 완료되었는지 반드시 명확히 전달.
 
-### 파이프라인 단계
+---
 
-1. **기획** — `/office-hours`
-   - 아이디어 구체화, 문제 정의, 타겟 사용자 분석
+## 워크플로우
 
-2. **전략 리뷰** — `/plan-ceo-review`
-   - 범위, 야망, 방향성 검증
-   - 10-star product 사고방식
+### Case 1: 구현할 내용이 명확할 때
 
-3. **디자인 시스템** — `/design-consultation`
-   - 디자인 시스템 생성 (DESIGN.md)
-   - 타이포그래피, 컬러, 레이아웃, 스페이싱, 모션
-
-4. **디자인 리뷰** — `/plan-design-review`
-   - UI/UX 계획 리뷰 (구현 전)
-
-5. **엔지니어링 리뷰** — `/plan-eng-review`
-   - 아키텍처, 데이터플로우, 엣지케이스, 테스트 커버리지
-
-6. **자동 리뷰** — `/autoplan`
-   - CEO + 디자인 + 엔지니어링 리뷰를 한번에 자동 실행
-
-7. **구현** — 코딩
-   - 계획에 따라 구현 진행
-
-8. **코드 정리** — `/simplify`
-   - 변경된 코드의 재사용성, 효율성, 품질 검토 + 자동 수정
-
-9. **QA 테스트** — `/qa`
-   - 체계적 QA 테스트 + 버그 자동 수정
-   - `/qa-only`로 리포트만 생성 가능
-   - 인증 페이지 테스트 시 `/setup-browser-cookies`로 쿠키 임포트 선행
-
-10. **보안 감사** — `/cso`
-    - OWASP Top 10, STRIDE 위협 모델링, 의존성 공급망 검사
-    - daily (빠른 스캔) / comprehensive (월간 정밀 스캔) 두 모드
-
-11. **코드 리뷰** — `/review`
-    - PR diff 분석, SQL 안전성, 구조적 이슈 체크
-
-12. **배포 설정** — `/setup-deploy` (최초 1회)
-    - 배포 플랫폼 자동 감지, 프로덕션 URL, 헬스체크 설정
-
-13. **배포** — `/ship` → `/land-and-deploy` → `/canary`
-    - PR 생성 → 머지 & 배포 → 카나리 모니터링
-
-14. **문서화** — `/document-release`
-    - README, CHANGELOG 등 자동 업데이트
-
-### 보조 skills
-
-- `/investigate` — 버그 디버깅, 근본 원인 분석
-- `/design-review` — 라이브 사이트 비주얼 QA
-- `/browse` — 헤드리스 브라우저 QA 테스트
-- `/benchmark` — 성능 벤치마크
-- `/retro` — 주간 회고
-- `/careful` / `/freeze` / `/guard` / `/unfreeze` — 안전 모드
-- `/codex` — 세컨드 오피니언 (코드 리뷰, 챌린지)
-- `/loop` — 명령 반복 실행 (예: `/loop 5m /canary`)
-- `/schedule` — cron 기반 원격 에이전트 스케줄링
-- `/setup-browser-cookies` — 헤드리스 브라우저 쿠키 임포트 (인증 페이지 QA 전)
-
-### 진행 순서 가이드
-
-새 기능을 추가할 때:
 ```
-/office-hours → /plan-ceo-review → /design-consultation → /plan-eng-review → 구현 → /simplify → /qa → /cso → /review → /ship
+1. 요청 분석 → Git Issue 생성 (병렬 가능한 단위로 분할)
+2. 이해도 점검 → 사용자에게 "이렇게 작동해야 하는 것이 맞는지" 확인
+   - 일치하면 → 3번으로
+   - 불일치하면 → 재확인 반복
+3. Phase A (의사결정) → /office-hours + /plan-ceo-review
+4. Phase B (자율 실행, 동의없이 진행)
+   → /design-consultation → /plan-eng-review → TDD 구현 → /simplify → /qa → /cso → /review
+5. PR 생성
 ```
 
-버그를 수정할 때:
+### Case 2: 구현할 내용이 명확하지 않을 때
+
 ```
-/investigate → 수정 → /qa → /review → /ship
+1. /office-hours 로 브레인스토밍
+2. 아이디어가 구체화되면 → Case 1의 1번부터 진행
 ```
 
-디자인 개선할 때:
+### Case 3: 버그 수정
+
 ```
-/design-review → 수정 → /qa → /ship
+/investigate → TDD 수정 (회귀 테스트 먼저) → /qa → /review → PR
 ```
+
+### Case 4: 디자인 개선
+
+```
+/design-review → 수정 → /qa → PR
+```
+
+---
+
+## Git Issue 전략
+
+### 단일 작업
+- main 브랜치에서 feature 브랜치 생성
+- 1 issue = 1 branch = 1 PR
+
+### 병렬 작업 (큰 기능)
+- **Release Issue** 를 먼저 생성 (부모)
+- Release Issue 아래에 병렬 sub-issue 생성
+- 각 sub-issue 별로 feature 브랜치 생성
+- 모든 sub-issue PR이 완료되면 Release Issue 종료
+
+```
+예시:
+Release Issue: "뮤직 플레이어 모션 추가" (#10)
+├── Sub-issue: "리스트 애니메이션" (#11) → feature/list-animation
+├── Sub-issue: "커버 회전 효과" (#12) → feature/cover-rotation
+└── Sub-issue: "통계 대시보드" (#13) → feature/stats-dashboard
+```
+
+---
+
+## gstack Skills 파이프라인
+
+### Phase A: 의사결정 (사용자 참여)
+
+| 단계 | Skill | 역할 |
+|------|-------|------|
+| 기획 | `/office-hours` | 아이디어 구체화, 문제 정의 |
+| 전략 리뷰 | `/plan-ceo-review` | 범위, 방향성 검증 |
+
+### Phase B: 자율 실행 (동의없이 진행)
+
+| 단계 | Skill | 역할 |
+|------|-------|------|
+| 디자인 시스템 | `/design-consultation` | DESIGN.md 생성 |
+| 디자인 리뷰 | `/plan-design-review` | UI/UX 계획 리뷰 |
+| 엔지니어링 리뷰 | `/plan-eng-review` | 아키텍처, 엣지케이스, 테스트 커버리지 |
+| 자동 리뷰 | `/autoplan` | CEO + 디자인 + 엔지니어링 리뷰 한번에 |
+| 구현 | TDD 코딩 | 테스트 먼저, 구현 후 |
+| 코드 정리 | `/simplify` | 재사용성, 효율성, 품질 검토 + 자동 수정 |
+| QA 테스트 | `/qa` | 체계적 QA + 버그 자동 수정 |
+| 보안 감사 | `/cso` | OWASP, STRIDE, 의존성 검사 |
+| 코드 리뷰 | `/review` | diff 분석, 구조적 이슈 |
+| PR 생성 | `/ship` | PR 생성 |
+
+### 보조 Skills
+
+| Skill | 역할 |
+|-------|------|
+| `/investigate` | 버그 디버깅, 근본 원인 분석 |
+| `/design-review` | 라이브 사이트 비주얼 QA |
+| `/browse` | 헤드리스 브라우저 테스트 |
+| `/benchmark` | 성능 벤치마크 |
+| `/retro` | 주간 회고 |
+| `/careful` / `/freeze` / `/guard` / `/unfreeze` | 안전 모드 |
+| `/codex` | 세컨드 오피니언 |
+| `/loop` | 명령 반복 실행 |
+| `/schedule` | cron 기반 스케줄링 |
+| `/setup-browser-cookies` | 인증 페이지 QA 전 쿠키 임포트 |
+| `/land-and-deploy` → `/canary` | 머지 & 배포 → 모니터링 |
+| `/document-release` | README, CHANGELOG 업데이트 |
+
+---
 
 ## 기술 스택
 
@@ -90,18 +116,14 @@
 - **Styling**: Tailwind CSS
 - **State**: Zustand (persist + skipHydration)
 - **Testing**: Vitest + Playwright
-- **Deploy**: Vercel
+- **Animation**: Framer Motion
+- **Deploy**: Vercel (https://todo-music.vercel.app/)
+- **Repo**: https://github.com/kimbh7602/todo-music
 
-## 프로젝트 상태
+---
 
-- [ ] 기획 (`/office-hours`)
-- [ ] 전략 리뷰 (`/plan-ceo-review`)
-- [ ] 디자인 시스템 (`/design-consultation`)
-- [ ] 엔지니어링 리뷰 (`/plan-eng-review`)
-- [ ] 구현
-- [ ] 코드 정리 (`/simplify`)
-- [ ] QA 테스트
-- [ ] 보안 감사 (`/cso`)
-- [ ] 코드 리뷰 (`/review`)
-- [ ] 배포 설정 (`/setup-deploy`)
-- [ ] 배포
+## 배포
+
+- **플랫폼**: Vercel
+- **프로덕션 URL**: https://todo-music.vercel.app/
+- GitHub main 브랜치 push 시 자동 배포
