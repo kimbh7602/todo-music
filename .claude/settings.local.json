@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL -o cover1.jpg \"https://picsum.photos/id/39/400/400\")",
+      "Bash(curl -sL -o cover2.jpg \"https://picsum.photos/id/65/400/400\")",
+      "Bash(curl -sL -o cover3.jpg \"https://picsum.photos/id/103/400/400\")",
+      "Bash(curl -sL -o cover4.jpg \"https://picsum.photos/id/110/400/400\")",
+      "Bash(curl -sL -o cover5.jpg \"https://picsum.photos/id/164/400/400\")",
+      "Bash(npm run:*)",
+      "WebSearch",
+      "WebFetch(domain:pixabay.com)",
+      "WebFetch(domain:freemusicarchive.org)",
+      "WebFetch(domain:www.free-stock-music.com)",
+      "Bash(mkdir -p /Users/bkcnc/Music/todo-music/public/audio)",
+      "Bash(curl -sL -o track1.mp3 \"https://www.free-stock-music.com/music/fsm-team/mp3/fsm-team-escp-lucid-dreaming.mp3\")",
+      "Bash(curl -sL -o track2.mp3 \"https://www.free-stock-music.com/music/fsm-team/mp3/fsm-team-escp-downtown-walk.mp3\")",
+      "Bash(curl -sL -o track3.mp3 \"https://www.free-stock-music.com/music/fsm-team/mp3/fsm-team-escp-lullaby.mp3\")",
+      "Bash(curl -sL -o track4.mp3 \"https://www.free-stock-music.com/music/fsm-team/mp3/fsm-team-escp-neonscapes.mp3\")",
+      "Bash(xxd)",
+      "WebFetch(domain:archive.org)",
+      "Bash(curl -sL -o track1.mp3 \"https://archive.org/download/loyalty-freak-music-lofi-ambient-songs/Loyalty%20Freak%20Music%20-%20LOFI%20AMBIENT%20SONGS%20%21%20-%2001%20Lack%20of%20Color%20-%20Drowning%20in%20your%20smile.mp3\")",
+      "Bash(curl -sL -o track2.mp3 \"https://archive.org/download/loyalty-freak-music-lofi-ambient-songs/Loyalty%20Freak%20Music%20-%20LOFI%20AMBIENT%20SONGS%20%21%20-%2002%20Lack%20of%20Color%20-%20Dancing%20in%20the%20street.mp3\")",
+      "Bash(curl -sL -o track3.mp3 \"https://archive.org/download/loyalty-freak-music-lofi-ambient-songs/Loyalty%20Freak%20Music%20-%20LOFI%20AMBIENT%20SONGS%20%21%20-%2003%20Lack%20of%20Color%20-%20Aeroplane.mp3\")",
+      "Bash(curl -sL -o track4.mp3 \"https://archive.org/download/loyalty-freak-music-lofi-ambient-songs/Loyalty%20Freak%20Music%20-%20LOFI%20AMBIENT%20SONGS%20%21%20-%2005%20Crying%20those%20tears%20I%27ve%20kept%20so%20long.mp3\")",
+      "Bash(curl -sL -o track5.mp3 \"https://archive.org/download/loyalty-freak-music-lofi-ambient-songs/Loyalty%20Freak%20Music%20-%20LOFI%20AMBIENT%20SONGS%20%21%20-%2006%20This%20pain%20is%20soft%20but%20here.mp3\")",
+      "Bash(~/.claude/skills/gstack/bin/gstack-review-read)",
+      "Skill(office-hours)",
+      "Skill(office-hours:*)",
+      "Skill(qa)",
+      "Skill(qa:*)"
+    ],
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "/Users/bkcnc/Music/todo-music/public/audio"
+    ]
+  }
+}

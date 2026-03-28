@@ -101,7 +101,7 @@ export default function TodoList() {
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {tab === "completed" && <StatsCard />}
 
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="popLayout" key={tab}>
           {tab === "active" &&
             activeTodos.map((todo) => (
               <motion.div
