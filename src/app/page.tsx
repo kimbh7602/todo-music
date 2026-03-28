@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTodoStore } from "@/store/useTodoStore";
 import MusicPlayer from "@/components/MusicPlayer";
 import TodoList from "@/components/TodoList";
+import CategorySelector from "@/components/CategorySelector";
 
 export default function Home() {
   const todos = useTodoStore((s) => s.todos);
@@ -102,9 +103,10 @@ export default function Home() {
               </motion.div>
             )}
           </div>
-          <p className="text-sm text-gray-500 px-4 mb-6">
+          <p className="text-sm text-gray-500 px-4 mb-4">
             Play your tasks like music
           </p>
+          <CategorySelector />
           <TodoList />
         </div>
       </div>
