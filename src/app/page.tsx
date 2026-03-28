@@ -37,15 +37,10 @@ export default function Home() {
   }, [activeTodo, visible]);
 
   // Cleanup after exit transition (replaces unreliable onTransitionEnd)
-  useEffect(() => {
-    if (!visible && !activeTodo && showPlayer) {
-      const timer = setTimeout(() => {
-        setLastTodo(null);
-        setShowPlayer(false);
-      }, 550); // slightly longer than CSS transition (500ms)
-      return () => clearTimeout(timer);
-    }
-  }, [visible, activeTodo, showPlayer]);
+  if (!visible && !activeTodo && showPlayer) {
+    setShowPlayer(false);
+    setLastTodo(null);
+  }
 
   const displayTodo = activeTodo ?? lastTodo;
   const bgColor =
