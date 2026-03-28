@@ -14,14 +14,47 @@ const COVER_IMAGES = [
   "/images/cover8.jpg",
 ];
 
-const AUDIO_TRACKS = [
-  "/audio/track1.mp3",
-  "/audio/track2.mp3",
-  "/audio/track3.mp3",
-  "/audio/track4.mp3",
-  "/audio/track5.mp3",
-  "/audio/track6.mp3",
-];
+export const AUDIO_CATEGORIES: Record<string, string[]> = {
+  lofi: [
+    "/audio/lofi/track1.mp3",
+    "/audio/lofi/track2.mp3",
+    "/audio/lofi/track3.mp3",
+    "/audio/lofi/track4.mp3",
+    "/audio/lofi/track5.mp3",
+    "/audio/lofi/track6.mp3",
+  ],
+  electronic: [
+    "/audio/electronic/track1.mp3",
+    "/audio/electronic/track2.mp3",
+    "/audio/electronic/track3.mp3",
+    "/audio/electronic/track4.mp3",
+  ],
+  piano: [
+    "/audio/piano/track1.mp3",
+    "/audio/piano/track2.mp3",
+    "/audio/piano/track3.mp3",
+    "/audio/piano/track4.mp3",
+  ],
+  ambient: [
+    "/audio/ambient/track1.mp3",
+    "/audio/ambient/track2.mp3",
+    "/audio/ambient/track3.mp3",
+    "/audio/ambient/track4.mp3",
+  ],
+  nature: [
+    "/audio/nature/track1.mp3",
+    "/audio/nature/track2.mp3",
+    "/audio/nature/track3.mp3",
+    "/audio/nature/track4.mp3",
+  ],
+};
+
+const ALL_TRACKS = Object.values(AUDIO_CATEGORIES).flat();
+
+function getTracksForCategory(category: string): string[] {
+  if (category === "all") return ALL_TRACKS;
+  return AUDIO_CATEGORIES[category] ?? ALL_TRACKS;
+}
 
 const PLAYER_COLORS = [
   "#d4a0b0",
@@ -57,12 +90,14 @@ interface TodoState {
   maxStreak: number;
   lastCompletedDate: string | null;
   totalCompleted: number;
+  selectedCategory: string;
   addTodo: (text: string) => void;
   toggleComplete: (id: string) => void;
   activate: (id: string) => void;
   deactivate: () => void;
   deleteTodo: (id: string) => void;
   hasActive: () => boolean;
+  setCategory: (category: string) => void;
 }
 
 export const useTodoStore = create<TodoState>()(
@@ -73,6 +108,7 @@ export const useTodoStore = create<TodoState>()(
       maxStreak: 0,
       lastCompletedDate: null,
       totalCompleted: 0,
+      selectedCategory: "all",
 
       addTodo: (text) =>
         set((state) => ({
@@ -85,7 +121,7 @@ export const useTodoStore = create<TodoState>()(
               active: false,
               coverImage: randomFrom(COVER_IMAGES),
               playerColor: randomFrom(PLAYER_COLORS),
-              audioTrack: randomFrom(AUDIO_TRACKS),
+              audioTrack: randomFrom(getTracksForCategory(state.selectedCategory)),
               completedDate: null,
             },
           ],
@@ -135,8 +171,10 @@ export const useTodoStore = create<TodoState>()(
       },
 
       activate: (id) => {
-        if (get().hasActive()) return;
-        set((state) => ({
+        const state = get();
+        if (state.hasActive()) return;
+        const tracks = getTracksForCategory(state.selectedCategory);
+        set({
           todos: state.todos.map((t) =>
             t.id === id
               ? {
@@ -144,11 +182,11 @@ export const useTodoStore = create<TodoState>()(
                   active: true,
                   coverImage: randomFrom(COVER_IMAGES),
                   playerColor: randomFrom(PLAYER_COLORS),
-                  audioTrack: randomFrom(AUDIO_TRACKS),
+                  audioTrack: randomFrom(tracks),
                 }
               : t
           ),
-        }));
+        });
       },
 
       deactivate: () => {
@@ -166,6 +204,11 @@ export const useTodoStore = create<TodoState>()(
         })),
 
       hasActive: () => get().todos.some((t) => t.active),
+
+      setCategory: (category) => {
+        if (category !== "all" && !AUDIO_CATEGORIES[category]) return;
+        set({ selectedCategory: category });
+      },
     }),
     {
       name: "todo-music-storage",
