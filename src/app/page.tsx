@@ -1,65 +1,118 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTodoStore } from "@/store/useTodoStore";
+import MusicPlayer from "@/components/MusicPlayer";
+import TodoList from "@/components/TodoList";
 
 export default function Home() {
+  const todos = useTodoStore((s) => s.todos);
+  const currentStreak = useTodoStore((s) => s.currentStreak);
+  const activeTodo = todos.find((t) => t.active) ?? null;
+
+  const [prevActiveTodo, setPrevActiveTodo] = useState(activeTodo);
+  const [lastTodo, setLastTodo] = useState(activeTodo);
+  const [visible, setVisible] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
+
+  if (activeTodo !== prevActiveTodo) {
+    setPrevActiveTodo(activeTodo);
+    if (activeTodo) {
+      setLastTodo(activeTodo);
+      setShowPlayer(true);
+    } else {
+      setVisible(false);
+    }
+  }
+
+  useEffect(() => {
+    useTodoStore.persist.rehydrate();
+  }, []);
+
+  useEffect(() => {
+    if (activeTodo && !visible) {
+      requestAnimationFrame(() => setVisible(true));
+    }
+  }, [activeTodo, visible]);
+
+  // Cleanup after exit transition (replaces unreliable onTransitionEnd)
+  useEffect(() => {
+    if (!visible && !activeTodo && showPlayer) {
+      const timer = setTimeout(() => {
+        setLastTodo(null);
+        setShowPlayer(false);
+      }, 550); // slightly longer than CSS transition (500ms)
+      return () => clearTimeout(timer);
+    }
+  }, [visible, activeTodo, showPlayer]);
+
+  const displayTodo = activeTodo ?? lastTodo;
+  const bgColor =
+    visible && displayTodo ? displayTodo.playerColor : "#f9fafb";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div
+      className="flex flex-col md:flex-row min-h-screen transition-colors duration-700 ease-in-out"
+      style={{ backgroundColor: bgColor }}
+    >
+      {/* Music Player Section */}
+      <div
+        className={`transition-all duration-500 ease-in-out overflow-hidden ${
+          visible
+            ? "max-h-[700px] opacity-100 md:max-h-none md:w-1/2 md:shrink-0"
+            : "max-h-0 opacity-0 md:max-h-none md:w-0"
+        }`}
+      >
+        <AnimatePresence>
+          {showPlayer && displayTodo && (
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                duration: 0.4,
+              }}
+              className="md:sticky md:top-0 md:h-screen flex items-center justify-center p-6"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              <MusicPlayer todo={displayTodo} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Todo List Section */}
+      <div
+        className={`min-h-screen transition-all duration-500 ease-in-out md:flex md:items-center md:justify-center ${
+          visible ? "md:w-1/2" : "md:w-full"
+        }`}
+      >
+        <div className="max-w-lg w-full mx-auto py-8 px-4">
+          {/* Header with streak */}
+          <div className="flex items-center justify-between px-4 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900">Todo Music</h1>
+            {currentStreak > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                className="liquid-glass-subtle rounded-full px-3 py-1 text-sm font-medium text-gray-800"
+              >
+                <span className="relative z-10">
+                  {currentStreak}d streak
+                </span>
+              </motion.div>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 px-4 mb-6">
+            Play your tasks like music
           </p>
+          <TodoList />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
