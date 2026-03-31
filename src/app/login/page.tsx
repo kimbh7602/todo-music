@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import OAuthButtons from "@/components/OAuthButtons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,6 +41,14 @@ export default function LoginPage() {
           Play your tasks like music
         </p>
 
+        <OAuthButtons />
+
+        <div className="flex items-center gap-3 my-6 relative z-10">
+          <div className="flex-1 h-px bg-gray-300/50" />
+          <span className="text-xs text-gray-400">or</span>
+          <div className="flex-1 h-px bg-gray-300/50" />
+        </div>
+
         <form onSubmit={handleLogin} className="space-y-4 relative z-10">
           <input
             type="email"
@@ -58,9 +67,7 @@ export default function LoginPage() {
             className="w-full px-4 py-3 rounded-xl liquid-glass-input text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
           />
 
-          {error && (
-            <p className="text-xs text-red-500">{error}</p>
-          )}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <button
             type="submit"
@@ -68,7 +75,7 @@ export default function LoginPage() {
             className="w-full liquid-glass-dark rounded-xl px-5 py-3 text-white text-sm font-medium hover:bg-black/30 transition-all disabled:opacity-50"
           >
             <span className="relative z-10">
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Signing in..." : "Sign in with email"}
             </span>
           </button>
         </form>
