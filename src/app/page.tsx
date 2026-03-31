@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTodoStore } from "@/store/useTodoStore";
@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import MusicPlayer from "@/components/MusicPlayer";
 import TodoList from "@/components/TodoList";
-import CategorySelector from "@/components/CategorySelector";
+import Sidebar from "@/components/Sidebar";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -25,6 +25,7 @@ export default function Home() {
   const [lastTodo, setLastTodo] = useState(activeTodo);
   const [visible, setVisible] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (activeTodo !== prevActiveTodo) {
     setPrevActiveTodo(activeTodo);
@@ -61,11 +62,12 @@ export default function Home() {
     setLastTodo(null);
   }
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
+    setSidebarOpen(false);
     await supabase.auth.signOut();
     reset();
     router.push("/login");
-  };
+  }, [reset, router]);
 
   if (authLoading || !user) {
     return (
@@ -81,9 +83,37 @@ export default function Home() {
 
   return (
     <div
-      className="flex flex-col md:flex-row min-h-screen transition-colors duration-700 ease-in-out"
+      className="flex flex-col md:flex-row min-h-screen transition-colors duration-700 ease-in-out relative"
       style={{ backgroundColor: bgColor }}
     >
+      {/* Hamburger button */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="fixed top-6 right-6 z-30 w-10 h-10 rounded-full liquid-glass-btn flex items-center justify-center"
+        aria-label="Open menu"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className="text-gray-700 relative z-10"
+        >
+          <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+      </button>
+
+      {/* Sidebar */}
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onLogout={handleLogout}
+      />
+
+      {/* Music Player Section */}
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden ${
           visible
@@ -111,6 +141,7 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
+      {/* Todo List Section */}
       <div
         className={`min-h-screen transition-all duration-500 ease-in-out md:flex md:items-center md:justify-center ${
           visible ? "md:w-1/2" : "md:w-full"
@@ -119,31 +150,22 @@ export default function Home() {
         <div className="max-w-lg w-full mx-auto py-8 px-4">
           <div className="flex items-center justify-between px-4 mb-2">
             <h1 className="text-2xl font-bold text-gray-900">Todo Music</h1>
-            <div className="flex items-center gap-2">
-              {currentStreak > 0 && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                  className="liquid-glass-subtle rounded-full px-3 py-1 text-sm font-medium text-gray-800"
-                >
-                  <span className="relative z-10">
-                    {currentStreak}d streak
-                  </span>
-                </motion.div>
-              )}
-              <button
-                onClick={handleLogout}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            {currentStreak > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                className="liquid-glass-subtle rounded-full px-3 py-1 text-sm font-medium text-gray-800"
               >
-                Logout
-              </button>
-            </div>
+                <span className="relative z-10">
+                  🔥 {currentStreak}d
+                </span>
+              </motion.div>
+            )}
           </div>
           <p className="text-sm text-gray-500 px-4 mb-4">
             Play your tasks like music
           </p>
-          <CategorySelector />
           {storeLoading ? (
             <p className="text-center text-sm text-gray-400 py-12">
               Loading todos...
