@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/lib/supabase";
 import { todayStr, daysBetween } from "@/utils/date";
 
 const COVER_IMAGES = [
@@ -91,6 +90,9 @@ interface TodoState {
   lastCompletedDate: string | null;
   totalCompleted: number;
   selectedCategory: string;
+  loading: boolean;
+  userId: string | null;
+  fetchTodos: (userId: string) => Promise<void>;
   addTodo: (text: string) => void;
   toggleComplete: (id: string) => void;
   activate: (id: string) => void;
@@ -98,121 +100,220 @@ interface TodoState {
   deleteTodo: (id: string) => void;
   hasActive: () => boolean;
   setCategory: (category: string) => void;
+  reset: () => void;
 }
 
-export const useTodoStore = create<TodoState>()(
-  persist(
-    (set, get) => ({
+export const useTodoStore = create<TodoState>()((set, get) => ({
+  todos: [],
+  currentStreak: 0,
+  maxStreak: 0,
+  lastCompletedDate: null,
+  totalCompleted: 0,
+  selectedCategory: "all",
+  loading: true,
+  userId: null,
+
+  fetchTodos: async (userId: string) => {
+    set({ loading: true, userId });
+
+    const [todosRes, statsRes] = await Promise.all([
+      supabase
+        .from("todos")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true }),
+      supabase.from("user_stats").select("*").eq("user_id", userId).single(),
+    ]);
+
+    const dbTodos = (todosRes.data ?? []).map((t) => ({
+      id: t.id,
+      text: t.text,
+      completed: t.completed,
+      active: false,
+      coverImage: randomFrom(COVER_IMAGES),
+      playerColor: randomFrom(PLAYER_COLORS),
+      audioTrack: randomFrom(ALL_TRACKS),
+      completedDate: t.completed_date,
+    }));
+
+    const stats = statsRes.data;
+
+    set({
+      todos: dbTodos,
+      currentStreak: stats?.current_streak ?? 0,
+      maxStreak: stats?.max_streak ?? 0,
+      lastCompletedDate: stats?.last_completed_date ?? null,
+      totalCompleted: stats?.total_completed ?? 0,
+      selectedCategory: stats?.selected_category ?? "all",
+      loading: false,
+    });
+  },
+
+  addTodo: (text) => {
+    const state = get();
+    const id = crypto.randomUUID();
+    const newTodo: Todo = {
+      id,
+      text,
+      completed: false,
+      active: false,
+      coverImage: randomFrom(COVER_IMAGES),
+      playerColor: randomFrom(PLAYER_COLORS),
+      audioTrack: randomFrom(getTracksForCategory(state.selectedCategory)),
+      completedDate: null,
+    };
+
+    set({ todos: [...state.todos, newTodo] });
+
+    if (state.userId) {
+      supabase
+        .from("todos")
+        .insert({ id, user_id: state.userId, text })
+        .then();
+    }
+  },
+
+  toggleComplete: (id) => {
+    const state = get();
+    const todo = state.todos.find((t) => t.id === id);
+    if (!todo) return;
+
+    const wasCompleted = todo.completed;
+    const today = todayStr();
+
+    if (wasCompleted) {
+      const newTotal = Math.max(0, state.totalCompleted - 1);
+      set({
+        todos: state.todos.map((t) =>
+          t.id === id
+            ? { ...t, completed: false, active: false, completedDate: null }
+            : t
+        ),
+        totalCompleted: newTotal,
+      });
+
+      if (state.userId) {
+        supabase
+          .from("todos")
+          .update({ completed: false, completed_date: null })
+          .eq("id", id)
+          .then();
+        supabase
+          .from("user_stats")
+          .update({ total_completed: newTotal })
+          .eq("user_id", state.userId)
+          .then();
+      }
+    } else {
+      let newStreak = state.currentStreak;
+      const last = state.lastCompletedDate;
+
+      if (last === today) {
+        // Same day
+      } else if (last && daysBetween(last, today) === 1) {
+        newStreak = state.currentStreak + 1;
+      } else {
+        newStreak = 1;
+      }
+
+      const newMax = Math.max(state.maxStreak, newStreak);
+      const newTotal = state.totalCompleted + 1;
+
+      set({
+        todos: state.todos.map((t) =>
+          t.id === id
+            ? { ...t, completed: true, active: false, completedDate: today }
+            : t
+        ),
+        currentStreak: newStreak,
+        maxStreak: newMax,
+        lastCompletedDate: today,
+        totalCompleted: newTotal,
+      });
+
+      if (state.userId) {
+        supabase
+          .from("todos")
+          .update({ completed: true, completed_date: today })
+          .eq("id", id)
+          .then();
+        supabase
+          .from("user_stats")
+          .update({
+            current_streak: newStreak,
+            max_streak: newMax,
+            last_completed_date: today,
+            total_completed: newTotal,
+          })
+          .eq("user_id", state.userId)
+          .then();
+      }
+    }
+  },
+
+  activate: (id) => {
+    const state = get();
+    if (state.hasActive()) return;
+    const tracks = getTracksForCategory(state.selectedCategory);
+    set({
+      todos: state.todos.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              active: true,
+              coverImage: randomFrom(COVER_IMAGES),
+              playerColor: randomFrom(PLAYER_COLORS),
+              audioTrack: randomFrom(tracks),
+            }
+          : t
+      ),
+    });
+  },
+
+  deactivate: () => {
+    if (!get().hasActive()) return;
+    set((state) => ({
+      todos: state.todos.map((t) =>
+        t.active ? { ...t, active: false } : t
+      ),
+    }));
+  },
+
+  deleteTodo: (id) => {
+    const state = get();
+    set({ todos: state.todos.filter((t) => t.id !== id) });
+
+    if (state.userId) {
+      supabase.from("todos").delete().eq("id", id).then();
+    }
+  },
+
+  hasActive: () => get().todos.some((t) => t.active),
+
+  setCategory: (category) => {
+    if (category !== "all" && !AUDIO_CATEGORIES[category]) return;
+    const state = get();
+    set({ selectedCategory: category });
+
+    if (state.userId) {
+      supabase
+        .from("user_stats")
+        .update({ selected_category: category })
+        .eq("user_id", state.userId)
+        .then();
+    }
+  },
+
+  reset: () => {
+    set({
       todos: [],
       currentStreak: 0,
       maxStreak: 0,
       lastCompletedDate: null,
       totalCompleted: 0,
       selectedCategory: "all",
-
-      addTodo: (text) =>
-        set((state) => ({
-          todos: [
-            ...state.todos,
-            {
-              id: uuidv4(),
-              text,
-              completed: false,
-              active: false,
-              coverImage: randomFrom(COVER_IMAGES),
-              playerColor: randomFrom(PLAYER_COLORS),
-              audioTrack: randomFrom(getTracksForCategory(state.selectedCategory)),
-              completedDate: null,
-            },
-          ],
-        })),
-
-      toggleComplete: (id) => {
-        const state = get();
-        const todo = state.todos.find((t) => t.id === id);
-        if (!todo) return;
-
-        const wasCompleted = todo.completed;
-        const today = todayStr();
-
-        if (wasCompleted) {
-          set({
-            todos: state.todos.map((t) =>
-              t.id === id
-                ? { ...t, completed: false, active: false, completedDate: null }
-                : t
-            ),
-            totalCompleted: Math.max(0, state.totalCompleted - 1),
-          });
-        } else {
-          let newStreak = state.currentStreak;
-          const last = state.lastCompletedDate;
-
-          if (last === today) {
-            // Same day, streak stays
-          } else if (last && daysBetween(last, today) === 1) {
-            newStreak = state.currentStreak + 1;
-          } else {
-            newStreak = 1;
-          }
-
-          set({
-            todos: state.todos.map((t) =>
-              t.id === id
-                ? { ...t, completed: true, active: false, completedDate: today }
-                : t
-            ),
-            currentStreak: newStreak,
-            maxStreak: Math.max(state.maxStreak, newStreak),
-            lastCompletedDate: today,
-            totalCompleted: state.totalCompleted + 1,
-          });
-        }
-      },
-
-      activate: (id) => {
-        const state = get();
-        if (state.hasActive()) return;
-        const tracks = getTracksForCategory(state.selectedCategory);
-        set({
-          todos: state.todos.map((t) =>
-            t.id === id
-              ? {
-                  ...t,
-                  active: true,
-                  coverImage: randomFrom(COVER_IMAGES),
-                  playerColor: randomFrom(PLAYER_COLORS),
-                  audioTrack: randomFrom(tracks),
-                }
-              : t
-          ),
-        });
-      },
-
-      deactivate: () => {
-        if (!get().hasActive()) return;
-        set((state) => ({
-          todos: state.todos.map((t) =>
-            t.active ? { ...t, active: false } : t
-          ),
-        }));
-      },
-
-      deleteTodo: (id) =>
-        set((state) => ({
-          todos: state.todos.filter((t) => t.id !== id),
-        })),
-
-      hasActive: () => get().todos.some((t) => t.active),
-
-      setCategory: (category) => {
-        if (category !== "all" && !AUDIO_CATEGORIES[category]) return;
-        set({ selectedCategory: category });
-      },
-    }),
-    {
-      name: "todo-music-storage",
-      skipHydration: true,
-    }
-  )
-);
+      loading: true,
+      userId: null,
+    });
+  },
+}));
