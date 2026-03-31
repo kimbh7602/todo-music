@@ -89,7 +89,7 @@ export default function Home() {
       {/* Hamburger button */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed top-6 right-6 z-30 w-10 h-10 rounded-full liquid-glass-btn flex items-center justify-center"
+        className="fixed top-6 right-6 z-30 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/40 bg-white/25 hover:bg-white/40 transition-all shadow-sm"
         aria-label="Open menu"
       >
         <svg
