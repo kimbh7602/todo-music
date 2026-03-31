@@ -64,7 +64,8 @@ export default function Sidebar({ open, onClose, onLogout }: SidebarProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 350, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-72 z-50 liquid-glass shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-72 z-50 shadow-2xl flex flex-col border-l border-white/35 bg-white/20 backdrop-blur-2xl"
+            style={{ WebkitBackdropFilter: "blur(24px) saturate(180%) brightness(110%)", backdropFilter: "blur(24px) saturate(180%) brightness(110%)" }}
           >
             <div className="p-6 flex flex-col gap-6 flex-1 relative z-10">
               {currentStreak > 0 && (
