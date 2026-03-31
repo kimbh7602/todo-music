@@ -1,15 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTodoStore } from "@/store/useTodoStore";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import MusicPlayer from "@/components/MusicPlayer";
 import TodoList from "@/components/TodoList";
 import CategorySelector from "@/components/CategorySelector";
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const todos = useTodoStore((s) => s.todos);
   const currentStreak = useTodoStore((s) => s.currentStreak);
+  const storeLoading = useTodoStore((s) => s.loading);
+  const fetchTodos = useTodoStore((s) => s.fetchTodos);
+  const reset = useTodoStore((s) => s.reset);
+
   const activeTodo = todos.find((t) => t.active) ?? null;
 
   const [prevActiveTodo, setPrevActiveTodo] = useState(activeTodo);
@@ -28,8 +37,18 @@ export default function Home() {
   }
 
   useEffect(() => {
-    useTodoStore.persist.rehydrate();
-  }, []);
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTodos(user.id);
+    } else {
+      reset();
+    }
+  }, [user, fetchTodos, reset]);
 
   useEffect(() => {
     if (activeTodo && !visible) {
@@ -37,10 +56,23 @@ export default function Home() {
     }
   }, [activeTodo, visible]);
 
-  // Cleanup after exit transition (replaces unreliable onTransitionEnd)
   if (!visible && !activeTodo && showPlayer) {
     setShowPlayer(false);
     setLastTodo(null);
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    reset();
+    router.push("/login");
+  };
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading...</p>
+      </div>
+    );
   }
 
   const displayTodo = activeTodo ?? lastTodo;
@@ -52,7 +84,6 @@ export default function Home() {
       className="flex flex-col md:flex-row min-h-screen transition-colors duration-700 ease-in-out"
       style={{ backgroundColor: bgColor }}
     >
-      {/* Music Player Section */}
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden ${
           visible
@@ -80,34 +111,46 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Todo List Section */}
       <div
         className={`min-h-screen transition-all duration-500 ease-in-out md:flex md:items-center md:justify-center ${
           visible ? "md:w-1/2" : "md:w-full"
         }`}
       >
         <div className="max-w-lg w-full mx-auto py-8 px-4">
-          {/* Header with streak */}
           <div className="flex items-center justify-between px-4 mb-2">
             <h1 className="text-2xl font-bold text-gray-900">Todo Music</h1>
-            {currentStreak > 0 && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="liquid-glass-subtle rounded-full px-3 py-1 text-sm font-medium text-gray-800"
+            <div className="flex items-center gap-2">
+              {currentStreak > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  className="liquid-glass-subtle rounded-full px-3 py-1 text-sm font-medium text-gray-800"
+                >
+                  <span className="relative z-10">
+                    {currentStreak}d streak
+                  </span>
+                </motion.div>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <span className="relative z-10">
-                  {currentStreak}d streak
-                </span>
-              </motion.div>
-            )}
+                Logout
+              </button>
+            </div>
           </div>
           <p className="text-sm text-gray-500 px-4 mb-4">
             Play your tasks like music
           </p>
           <CategorySelector />
-          <TodoList />
+          {storeLoading ? (
+            <p className="text-center text-sm text-gray-400 py-12">
+              Loading todos...
+            </p>
+          ) : (
+            <TodoList />
+          )}
         </div>
       </div>
     </div>
