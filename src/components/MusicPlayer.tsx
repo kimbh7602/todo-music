@@ -152,6 +152,7 @@ export default function MusicPlayer({ todo }: { todo: Todo }) {
           className="object-cover"
           sizes="(max-width: 768px) 80vw, 320px"
           priority
+          unoptimized={todo.coverImage.startsWith("http")}
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-12 h-12 rounded-full bg-gray-900/60 backdrop-blur-sm border-2 border-white/20" />
@@ -162,9 +163,15 @@ export default function MusicPlayer({ todo }: { todo: Todo }) {
         <h2 className="text-lg font-semibold text-gray-900 truncate">
           {todo.text}
         </h2>
-        <p className="text-sm text-gray-600/80 mt-1">
-          {isPlaying ? "Now Playing" : "Paused"}
-        </p>
+        {todo.trackName ? (
+          <p className="text-xs text-gray-500/80 mt-1 truncate">
+            {todo.trackName} — {todo.artistName}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600/80 mt-1">
+            {isPlaying ? "Now Playing" : "Paused"}
+          </p>
+        )}
       </div>
 
       <ProgressBar

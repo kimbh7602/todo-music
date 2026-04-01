@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { todayStr, daysBetween } from "@/utils/date";
+import { fetchTracksByGenre, getRandomTrack } from "@/lib/jamendo";
+import type { JamendoTrack } from "@/lib/jamendo";
 
 const COVER_IMAGES = [
   "/images/cover1.jpg",
@@ -80,6 +82,8 @@ export interface Todo {
   coverImage: string;
   playerColor: string;
   audioTrack: string;
+  trackName: string;
+  artistName: string;
   completedDate: string | null;
 }
 
@@ -95,7 +99,7 @@ interface TodoState {
   fetchTodos: (userId: string) => Promise<void>;
   addTodo: (text: string) => void;
   toggleComplete: (id: string) => void;
-  activate: (id: string) => void;
+  activate: (id: string) => Promise<void>;
   deactivate: () => void;
   deleteTodo: (id: string) => void;
   hasActive: () => boolean;
@@ -133,6 +137,8 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       coverImage: randomFrom(COVER_IMAGES),
       playerColor: randomFrom(PLAYER_COLORS),
       audioTrack: randomFrom(ALL_TRACKS),
+      trackName: "",
+      artistName: "",
       completedDate: t.completed_date,
     }));
 
@@ -160,6 +166,8 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       coverImage: randomFrom(COVER_IMAGES),
       playerColor: randomFrom(PLAYER_COLORS),
       audioTrack: randomFrom(getTracksForCategory(state.selectedCategory)),
+      trackName: "",
+      artistName: "",
       completedDate: null,
     };
 
@@ -251,23 +259,49 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
   },
 
-  activate: (id) => {
-    const state = get();
-    if (state.hasActive()) return;
-    const tracks = getTracksForCategory(state.selectedCategory);
+  activate: async (id) => {
+    if (get().hasActive()) return;
+
+    // Set active immediately to prevent race condition
+    const localTracks = getTracksForCategory(get().selectedCategory);
     set({
-      todos: state.todos.map((t) =>
+      todos: get().todos.map((t) =>
         t.id === id
           ? {
               ...t,
               active: true,
               coverImage: randomFrom(COVER_IMAGES),
               playerColor: randomFrom(PLAYER_COLORS),
-              audioTrack: randomFrom(tracks),
+              audioTrack: randomFrom(localTracks),
+              trackName: "",
+              artistName: "",
             }
           : t
       ),
     });
+
+    // Then try Jamendo API and update if successful
+    try {
+      const tracks = await fetchTracksByGenre(get().selectedCategory);
+      const track = getRandomTrack(tracks);
+      if (track) {
+        set({
+          todos: get().todos.map((t) =>
+            t.id === id && t.active
+              ? {
+                  ...t,
+                  coverImage: track.image,
+                  audioTrack: track.audio,
+                  trackName: track.name,
+                  artistName: track.artist_name,
+                }
+              : t
+          ),
+        });
+      }
+    } catch {
+      // Keep local fallback
+    }
   },
 
   deactivate: () => {
