@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo Music — Offline</title>
+  <style>
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; font-family: system-ui, sans-serif;
+      background: #f9fafb; color: #374151;
+    }
+    .card {
+      text-align: center; padding: 3rem 2rem;
+      background: rgba(255,255,255,0.25); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06); max-width: 320px;
+    }
+    h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+    p { font-size: 0.875rem; color: #6b7280; margin: 0 0 1.5rem; }
+    button {
+      padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none;
+      background: rgba(0,0,0,0.15); color: #374151; font-size: 0.875rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>You're offline</h1>
+    <p>Todo Music needs an internet connection. Check your connection and try again.</p>
+    <button onclick="location.reload()">Retry</button>
+  </div>
+</body>
+</html>
