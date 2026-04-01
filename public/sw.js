@@ -1,8 +1,5 @@
 const CACHE_NAME = "todo-music-v1";
 const STATIC_ASSETS = [
-  "/",
-  "/login",
-  "/signup",
   "/manifest.json",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
@@ -10,34 +7,63 @@ const STATIC_ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
       )
-    )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
-  // Network first, fallback to cache
+  // Only cache same-origin GET requests
+  if (
+    event.request.method !== "GET" ||
+    !event.request.url.startsWith(self.location.origin)
+  ) {
+    return;
+  }
+
+  // Skip API/auth requests
+  if (
+    event.request.url.includes("/rest/v1/") ||
+    event.request.url.includes("/auth/")
+  ) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful GET requests
-        if (event.request.method === "GET" && response.status === 200) {
+        if (response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() =>
+        caches.match(event.request).then(
+          (cached) =>
+            cached ||
+            new Response("Offline", {
+              status: 503,
+              headers: { "Content-Type": "text/plain" },
+            })
+        )
+      )
   );
 });

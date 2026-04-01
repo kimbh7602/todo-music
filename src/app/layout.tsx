@@ -18,7 +18,6 @@ export const metadata: Metadata = {
   title: "Todo Music",
   description: "Play your tasks like music",
   manifest: "/manifest.json",
-  themeColor: "#d4a0b0",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -27,6 +26,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icons/icon-192x192.png",
     apple: "/icons/apple-touch-icon.png",
+  },
+  other: {
+    "theme-color": "#d4a0b0",
   },
 };
 
