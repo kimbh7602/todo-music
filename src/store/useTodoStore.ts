@@ -260,35 +260,48 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
 
   activate: async (id) => {
-    const state = get();
-    if (state.hasActive()) return;
+    if (get().hasActive()) return;
 
-    // Try Jamendo API first
-    let track: JamendoTrack | null = null;
-    try {
-      const tracks = await fetchTracksByGenre(state.selectedCategory);
-      track = getRandomTrack(tracks);
-    } catch {
-      // Fallback to local tracks
-    }
-
-    const localTracks = getTracksForCategory(state.selectedCategory);
-
+    // Set active immediately to prevent race condition
+    const localTracks = getTracksForCategory(get().selectedCategory);
     set({
       todos: get().todos.map((t) =>
         t.id === id
           ? {
               ...t,
               active: true,
-              coverImage: track?.image || randomFrom(COVER_IMAGES),
+              coverImage: randomFrom(COVER_IMAGES),
               playerColor: randomFrom(PLAYER_COLORS),
-              audioTrack: track?.audio || randomFrom(localTracks),
-              trackName: track?.name || "",
-              artistName: track?.artist_name || "",
+              audioTrack: randomFrom(localTracks),
+              trackName: "",
+              artistName: "",
             }
           : t
       ),
     });
+
+    // Then try Jamendo API and update if successful
+    try {
+      const tracks = await fetchTracksByGenre(get().selectedCategory);
+      const track = getRandomTrack(tracks);
+      if (track) {
+        set({
+          todos: get().todos.map((t) =>
+            t.id === id && t.active
+              ? {
+                  ...t,
+                  coverImage: track.image,
+                  audioTrack: track.audio,
+                  trackName: track.name,
+                  artistName: track.artist_name,
+                }
+              : t
+          ),
+        });
+      }
+    } catch {
+      // Keep local fallback
+    }
   },
 
   deactivate: () => {
