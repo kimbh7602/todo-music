@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AuthProviderWrapper from "@/components/AuthProviderWrapper";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Todo Music",
   description: "Play your tasks like music",
+  manifest: "/manifest.json",
+  themeColor: "#d4a0b0",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Todo Music",
+  },
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -53,6 +65,7 @@ export default function RootLayout({
             </filter>
           </defs>
         </svg>
+        <ServiceWorkerRegistrar />
         <AuthProviderWrapper>{children}</AuthProviderWrapper>
       </body>
     </html>
