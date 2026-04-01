@@ -3,6 +3,7 @@ const STATIC_ASSETS = [
   "/manifest.json",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
+  "/offline.html",
 ];
 
 self.addEventListener("install", (event) => {
@@ -30,7 +31,6 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only cache same-origin GET requests
   if (
     event.request.method !== "GET" ||
     !event.request.url.startsWith(self.location.origin)
@@ -38,13 +38,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Skip API/auth requests
   if (
     event.request.url.includes("/rest/v1/") ||
     event.request.url.includes("/auth/")
   ) {
     return;
   }
+
+  const isNavigate = event.request.mode === "navigate";
 
   event.respondWith(
     fetch(event.request)
@@ -56,14 +57,11 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(() =>
-        caches.match(event.request).then(
-          (cached) =>
-            cached ||
-            new Response("Offline", {
-              status: 503,
-              headers: { "Content-Type": "text/plain" },
-            })
-        )
+        caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (isNavigate) return caches.match("/offline.html");
+          return new Response("", { status: 408 });
+        })
       )
   );
 });
