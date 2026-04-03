@@ -102,9 +102,24 @@ interface TodoState {
   activate: (id: string) => Promise<void>;
   deactivate: () => void;
   deleteTodo: (id: string) => void;
+  reorderTodos: (reorderedActive: Todo[]) => void;
   hasActive: () => boolean;
   setCategory: (category: string) => void;
   reset: () => void;
+}
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedSyncOrder(todos: Todo[]) {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    todos.forEach((todo, index) => {
+      supabase
+        .from("todos")
+        .update({ sort_order: index })
+        .eq("id", todo.id)
+        .then();
+    });
+  }, 300);
 }
 
 export const useTodoStore = create<TodoState>()((set, get) => ({
@@ -125,6 +140,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         .from("todos")
         .select("*")
         .eq("user_id", userId)
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true }),
       supabase.from("user_stats").select("*").eq("user_id", userId).single(),
     ]);
@@ -174,9 +190,10 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     set({ todos: [...state.todos, newTodo] });
 
     if (state.userId) {
+      const sortOrder = state.todos.filter((t) => !t.completed).length - 1;
       supabase
         .from("todos")
-        .insert({ id, user_id: state.userId, text })
+        .insert({ id, user_id: state.userId, text, sort_order: sortOrder })
         .then();
     }
   },
@@ -319,6 +336,16 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
 
     if (state.userId) {
       supabase.from("todos").delete().eq("id", id).then();
+    }
+  },
+
+  reorderTodos: (reorderedActive) => {
+    const state = get();
+    const completed = state.todos.filter((t) => t.completed);
+    set({ todos: [...reorderedActive, ...completed] });
+
+    if (state.userId) {
+      debouncedSyncOrder(reorderedActive);
     }
   },
 
